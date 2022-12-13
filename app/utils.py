@@ -192,7 +192,7 @@ class processed_files:
 
         return fig , total, avg
 
-    def plot_workflows(self, month_week):
+   def plot_workflows(self, month_week):
         # plot jobs and workflows
         if month_week == "overview":
             workflow_count = pd.DataFrame(self.df_processed['workflow_2'].value_counts().iloc[:5])
@@ -201,6 +201,7 @@ class processed_files:
             fig = px.bar(workflow_count, 
                 x="index", y="workflow_2",
                 title = "Workflows")
+            all_jobs = workflow_count
     
         else:
             workflow_count = pd.crosstab(self.df_processed[month_week],self.df_processed['workflow_2'])
@@ -209,13 +210,11 @@ class processed_files:
             fig = px.bar(workflow_count, x=month_week, y=workflow_count.columns.to_list())
             fig.update_layout(legend_title="workflow")
 
-        all_jobs = workflow_count.loc[:, workflow_count.columns != month_week].to_numpy().sum()
+            all_jobs = workflow_count.loc[:, workflow_count.columns != month_week].to_numpy().sum()
         
         fig.update_layout(xaxis_title = month_week, yaxis_title="count")
 
         return fig, all_jobs
-
-
 
 
 
