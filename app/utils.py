@@ -35,6 +35,12 @@ def date_to_datetime(
     return datetime.datetime(dt.year, dt.month, dt.day, hour, minute, second)
 
 
+def get_avg_total(df):
+    total =  str(round(df['sum'].sum(), 2))
+    avg = str(round(df['sum'].sum()/df.shape[0], 2))
+
+    return total, avg
+
 
 class database:
     def __init__(self, location):
@@ -64,7 +70,7 @@ class database:
             if _ in filename.lower():
                 return _ 
     
-    def get_data(self, start_date, end_date):
+    def get_acquired_data(self, start_date, end_date):
         # get list of files between start and end date
         start_date, end_date = date_to_datetime(start_date), date_to_datetime(end_date)
 
@@ -88,7 +94,7 @@ class database:
 
         return items
     
-    def get_processed(self, start_date, end_date):
+    def get_processed_data(self, start_date, end_date):
         start_date, end_date = date_to_datetime(start_date), date_to_datetime(end_date)
 
         items = pd.DataFrame(self.DB.queue.find({
@@ -111,21 +117,21 @@ class database:
 
 class processed_files:
     def __init__(self, df, df_processed):
-        self.df = df
+        self.df_acquired = df
         self.df_processed = df_processed
 
-    def get_stats_machine(self, month_week = "month"):
+    def get_stats_machine(self, month_week):
 
         if month_week == "week":
 
-            self.df['year_week'] = self.df['year'].astype('str') +"_"+ self.df['week'].apply(lambda x: f"{x:02d}")
+            self.df_acquired['year_week'] = self.df_acquired['year'].astype('str') +"_"+ self.df_acquired['week'].apply(lambda x: f"{x:02d}")
 
-            k = self.df[['year_week','machine','size_mb']].groupby(['year_week','machine']).sum()/1024/1000
+            k = self.df_acquired[['year_week','machine','size_mb']].groupby(['year_week','machine']).sum()/1024/1000
 
         elif month_week == "month":
-            self.df['year_month'] = self.df['year'].astype('str') +"_"+ self.df['month'].apply(lambda x: f"{x:02d}")
+            self.df_acquired['year_month'] = self.df_acquired['year'].astype('str') +"_"+ self.df_acquired['month'].apply(lambda x: f"{x:02d}")
 
-            k = self.df[['year_month','machine','size_mb']].groupby(['year_month','machine']).sum()/1024/1000
+            k = self.df_acquired[['year_month','machine','size_mb']].groupby(['year_month','machine']).sum()/1024/1000
 
         k = k.unstack()
         k = k.droplevel(axis=1, level=0)
@@ -135,7 +141,7 @@ class processed_files:
             
         return k
 
-    def get_stats_processor(self, month_week = "month"):
+    def get_stats_processor(self, month_week):
 
         if month_week == "week":
 
@@ -156,21 +162,35 @@ class processed_files:
             
         return k
 
-    def plot_processed_machine(self, month_week, machines):
+    def plot_acquired_data(self, month_week, machines):
         df = self.get_stats_machine(month_week=month_week)[machines]
         
         df.index.name = month_week
         df.reset_index(inplace=True)
 
-        fig = px.bar(df, x=month_week, y=machines, title="Tb processed")
-
-        df['total']=df.loc[:,machines].sum(axis=1)
-        total =  str(round(df['total'].sum(), 2))
-        avg = str(round(df['total'].sum()/df.shape[0], 2))
-
+        fig = px.bar(df, x=month_week, y=machines, title="Acquired data")
         fig.update_layout(legend_title="machine", yaxis_title = "Tb")
 
+        df['sum']= df.loc[:,machines].sum(axis=1)
+        total, avg = get_avg_total(df=df)
+       
         return fig, total, avg
+
+
+    def plot_processed_data(self, month_week):
+        df = self.get_stats_processor(month_week=month_week)
+        
+        df.index.name = month_week
+        df.reset_index(inplace=True)
+     
+        machines = df.columns.to_list()[ : -1]
+    
+        fig = px.bar(df, x=month_week, y=machines, title="Processed data")
+        fig.update_layout(legend_title="machine", yaxis_title = "Tb")
+
+        total, avg = get_avg_total(df=df)
+
+        return fig , total, avg
 
     def plot_workflows(self, month_week):
         # plot jobs and workflows
@@ -196,22 +216,7 @@ class processed_files:
         return fig, all_jobs
 
 
-    def plot_processed_processor(self, month_week):
-        df = self.get_stats_processor(month_week=month_week)
-        
-        df.index.name = month_week
-        df.reset_index(inplace=True)
-     
-        machines = df.columns.to_list()[ : -1]
-    
-        fig = px.bar(df, x=month_week, y=machines, title="Tb processed")
 
-        total =  str(round(df['sum'].sum(),2))
-        avg = str(round(df['sum'].sum()/df.shape[0],2))
-
-        fig.update_layout(legend_title="machine", yaxis_title = "Tb")
-
-        return fig , total, avg
 
 
         
