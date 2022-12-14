@@ -192,7 +192,7 @@ class processed_files:
 
         return fig , total, avg
 
-   def plot_workflows(self, month_week):
+    def plot_workflows(self, month_week):
         # plot jobs and workflows
         if month_week == "overview":
             workflow_count = pd.DataFrame(self.df_processed['workflow_2'].value_counts().iloc[:5])
